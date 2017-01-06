@@ -1,2 +1,11 @@
-#Text Editor temporary files
+## Text Editor temporary files
 *~
+
+## Windows Go executables
+*.exe
+
+## Redis file backups
+*.rdb
+
+## IntelliJ project files
+idea/
