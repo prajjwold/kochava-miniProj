@@ -11,21 +11,21 @@
 		private $url;
 		private $dataAra;
 		private $hashId;
-		private $dataId;
+		private $receivedTime;
 		
-		public function __construct($new_method, $new_url, $new_data) {
+		public function __construct($new_method, $new_url, $new_data, $recTime) {
 			$this->setMethod($new_method);
 			$this->setUrl($new_url);
 			$this->setData($new_data);
 			$this->setHashId("");
-			$this->setDataId("");
+			$this->setReceivedTime($recTime);
 		}
 		
 		public function getMethod() { return $this->method; }
 		public function getUrl() { return $this->url; }
 		public function getData() { return $this->dataAra; }
 		public function getHashId() { return $this->hashId; }
-		public function getDataId() { return $this->dataId; }
+		public function getReceivedTime() { return $this->receivedTime; }
 		
 		public function setMethod($new_method) {
 			$this->method = $new_method;
@@ -43,37 +43,53 @@
 			$this->hashId = $new_hashId;
 		}
 		
-		public function setDataId($new_dataId) {
-			$this->dataId = $new_dataId;
+		public function setReceivedTime($new_time) {
+			$this->receivedTime = $new_time;
 		}
 		
-		private function createRedisIds($redisConn) {
+		/*
+		 * 	Create ID for Redis Hash object by using a regex to extract the base URL 
+		 * 	and appending a random integer and the string ":postback"
+		 *  
+		 * 	Returns true if there is a match and no errors occur; false if there are 
+		 * 	no matches from the regex
+		*/
+		public function createRedisId($redisConn) {
 			preg_match('/http:\/\/(.*)\//', $this->getUrl(), $matches);
 			
 			if(sizeof($matches) == 0) {
-				http_response_code(500);
+				return FALSE;
 			}
 			
 			$id = $matches[1].rand();
 			$this->setHashId($id.":postback");
-			$this->setDataId($id.":data");
-			while($redisConn->exists($this->getHashId()) && $redisConn->exists($this->getDataId())) {
+			while($redisConn->exists($this->getHashId())) {
 				$id = $matches[1].rand();
 				$this->setHashId($id.":postback");
-				$this->setDataId($id.":data");
 			}
-		}
-		
-		public function storeData($redisConn) {
-			$this->createRedisIds($redisConn);
 			
-			foreach($this->getData() as $key => $val) {
-				$redisConn->hSet($this->getDataId(), $key, $val);
-			}
+			return TRUE;
 		}
 		
+		/*
+		 *	Creates an associative array with the raw endpoint (including the received method), 
+		 *  all data objects, and the time the request was received
+		 *
+		 *	returns the created array
+		*/
 		public function getHashFields() {
-			return array("endpoint" => $this->getUrl(), "method" => $this->getMethod(), "dataId" => $this->getDataId());
+			$rawEnd = $this->getMethod()." ".$this->getUrl();
+			$recTime = $this->getReceivedTime();
+			$data = $this->getData();
+			$result = array("rawEndpoint" => $rawEnd, "receivedTime" => $recTime);
+			
+			foreach($data as $ara) {
+				foreach($ara as $key => $val) {
+					$result[$key] = $val;
+				}
+			}
+			
+			return $result;
 		}
 	}
 	

@@ -2,23 +2,37 @@
 
 	require_once("postback.php");
 	
-	//check for POST data before beginning
+	// If no data received, return error code
+	if(!isset($_POST)) { http_response_code(400); }
 	
+	// Create a new Redis client and connect, return an error code if unable to connect
 	$redis = new Redis();
+	if(!$redis->connect('127.0.0.1', 7331)) {
+		http_response_code(500);
+	}
 	
-	$redis->connect('127.0.0.1', 7331);
+	// Authorize the connection to the Redis server
 	$redis->auth("staaben-miniProj");
-	$recTime = $redis->time();
+	// Store time from Redis server for when the request was received
+	$recTime = $redis->time()[0];
 	
+	// Get POST data
 	$endObj = $_POST["endpoint"];
 	$dataAra = $_POST["data"];
 	
-	$pb = new Postback($endObj["method"], $endObj["url"], $dataAra);
-	$pb->storeData($redis);
-	$hashFields = $pb->getHashFields();
-	$rKey = $pb->getHashId();
+	// Create a "postback" object from the given POST data
+	$postback = new Postback($endObj["method"], $endObj["url"], $dataAra, $recTime);
+	// Create and store ID for Redis key
+	$postback->createRedisId($redis);
+	// Get the array containing the fields for a Redis Hash object
+	$hashFields = $postback->getHashFields();
+	$rKey = $postback->getHashId();
 	
+	// Create the Redis Hash object on the Redis server, return an error code if an error
+	// occurs while store the Hash object
 	$resp = $redis->hMSet($rKey, $hashFields);
-	//check return from hMSet here
+	if(!$resp) {
+		http_response_code(500);
+	}
 	
 ?>
