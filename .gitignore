@@ -8,4 +8,4 @@
 *.rdb
 
 ## IntelliJ project files
-./idea/
+.idea/
