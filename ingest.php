@@ -3,7 +3,10 @@
 	require_once("postback.php");
 	
 	// If no data received, return error code
-	if(!isset($_POST)) { http_response_code(400); }
+	if(!isset($_POST["endpoint"], $_POST["data"])) { http_response_code(400); return; }
+
+	// Static constant key for Redis list of requests
+    $rqstList = "requests";
 	
 	// Create a new Redis client and connect, return an error code if unable to connect
 	$redis = new Redis();
@@ -34,5 +37,10 @@
 	if(!$resp) {
 		http_response_code(500);
 	}
-	
+
+	$resp = $redis->rPush($rqstList, $rKey);
+	if(!$resp) {
+	    http_response_code(500);
+    }
+
 ?>
