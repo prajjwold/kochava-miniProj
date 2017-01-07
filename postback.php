@@ -78,10 +78,11 @@
 		 *	returns the created array
 		*/
 		public function getHashFields() {
-			$rawEnd = $this->getMethod()." ".$this->getUrl();
+			$end = $this->getUrl();
+			$m = $this->getMethod();
 			$recTime = $this->getReceivedTime();
 			$data = $this->getData();
-			$result = array("rawEndpoint" => $rawEnd, "receivedTime" => $recTime);
+			$result = array("endpoint" => $end, "method" => $m, "receivedTime" => $recTime);
 			
 			foreach($data as $ara) {
 				foreach($ara as $key => $val) {
