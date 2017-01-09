@@ -86,12 +86,10 @@
 			
 			foreach($data as $ara) {
 				foreach($ara as $key => $val) {
-					$result[$key] = $val;
+					$result["data:".$key] = $val;
 				}
 			}
 			
 			return $result;
 		}
 	}
-	
-?>
