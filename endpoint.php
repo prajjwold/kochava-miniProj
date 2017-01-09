@@ -1,3 +1,3 @@
 <?php
-		echo $_GET["foo"]."\n";
-		echo $_GET["critical"];
+		echo $_POST["foo"]."\n";
+		echo $_POST["critical"];
