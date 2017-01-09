@@ -30,6 +30,8 @@ type PostbackLog struct {
 	requestMethod string
 }
 
+// Establish connection with the Redis server and open logging file
+// Infinite loop to continuously pull requests from the Redis server and begin a Go routine to process them
 func main() {
 	redisClient, err := redisConnect("127.0.0.1:7331", "staaben-miniProj", 0)
 	logFile := setupLogger(redisClient)
