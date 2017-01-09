@@ -98,11 +98,11 @@ func beginProcessing(conn *redis.Client, hashId string) {
 	}
 	pb.requestMethod = reqData["method"]
 
-	fmtdReq := formatRequest(reqData, conn)
+	fmtdReq, body := formatRequest(reqData, conn)
 	recTime, _ := strconv.Atoi(reqData["receivedTime"])
 	pb.deliveryTime = (int(conn.Time().Val().Unix()) - recTime)
 
-	response, respTime, err := getResponse(fmtdReq, pb)
+	response, respTime, err := getResponse(fmtdReq, body, pb)
 	if(err != nil) {
 		log.Panicf("%v\n", err)
 		panicExit(conn)
@@ -131,9 +131,10 @@ func getRequestData(hashId string, conn *redis.Client) (map[string]string, error
 }
 
 // Format the URL contained within the request
-func formatRequest(data map[string]string, conn *redis.Client) string {
+func formatRequest(data map[string]string, conn *redis.Client) (string, url.Values) {
 	result := data["endpoint"]
 	method := data["method"]
+	body := url.Values{}
 
 	switch method {
 		case "GET":
@@ -143,16 +144,22 @@ func formatRequest(data map[string]string, conn *redis.Client) string {
 				result = pattern.ReplaceAllString(result, url.QueryEscape(val))
 			}
 			break
+		case "POST":
+			for key, val := range data {
+				cleanKey := strings.Replace(key, "data:", "", -1)
+				body.Add(cleanKey, url.QueryEscape(val))
+			}
+			break
 		default:
 			log.Panic("Invalid request method.")
 			panicExit(conn)
 	}
 
-	return result
+	return result, body
 }
 
 // Get the HTTP response from the endpoint provided
-func getResponse(url string, pb *PostbackLog) (*http.Response, int64, error) {
+func getResponse(url string, body url.Values, pb *PostbackLog) (*http.Response, int64, error) {
 	var response *http.Response
 	var err error
 	var responseTime int64
@@ -163,6 +170,10 @@ func getResponse(url string, pb *PostbackLog) (*http.Response, int64, error) {
 	switch pb.requestMethod {
 		case "GET":
 			response, err = http.Get(url)
+			respEnd = int64(time.Now().Unix())
+			break
+		case "POST":
+			response, err = http.PostForm(url, body)
 			respEnd = int64(time.Now().Unix())
 			break
 	}
