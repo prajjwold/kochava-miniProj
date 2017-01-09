@@ -4,10 +4,12 @@
 ## Windows Go executables
 *.exe
 
-## Redis file backups
+## Redis files
 *.rdb
+*.log
+endpoint.php
+*.aof
 
 ## IntelliJ project files
 .idea/
-kochava.log
-endpoint.php
+
